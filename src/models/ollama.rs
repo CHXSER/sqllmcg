@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use regex::Regex;
 
 #[derive(Debug, Serialize)]
 pub struct OllamaRequest {
@@ -24,6 +25,13 @@ pub struct OllamaResponse {
 
 impl OllamaResponse {
     pub fn response(&self) -> String {
-        self.response.clone()
+        let re = Regex::new(r"(?s)<think>.*?</think>").unwrap();
+        let result = re.replace_all(&self.response, "")
+            .replace("```", "``")
+            .replace("**", "*")
+            .trim()
+            .to_string();
+        println!("Processed response: {}", result);
+        result
     }
 }
