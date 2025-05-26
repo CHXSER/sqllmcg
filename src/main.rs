@@ -80,7 +80,9 @@ async fn main() -> Result<()> {
                 "No code context available".to_string()
             }
         };
-
+        // Aggiungere un esclusione per regola, nel senso che se ti dico che una regola è falsa positiva, me la metti come 
+        // falsa a prescindere.
+        // Aggiungere creazione tag per falso positivo.
         let prompt = format!(
             "You are a cybersecurity expert analyzing a SonarQube issue.
             IMPORTANT: DO NOT USE MARKDOWN FORMATTING. Use SonarQube's specific formatting instead:
