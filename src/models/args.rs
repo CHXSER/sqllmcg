@@ -1,35 +1,61 @@
 use clap::Parser;
+use crate::models::config::Config;
+use anyhow::Result;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// SonarQube host URL
-    #[arg(short, long, default_value = "http://localhost:9000")]
-    sonar_host: String,
+    /// URL di SonarQube
+    #[arg(short, long)]
+    sonar_host: Option<String>,
 
-    /// Ollama API URL
-    #[arg(short, long, default_value = "http://padova.zucchettitest.it:11434")]
-    ollama_url: String,
+    /// URL di Ollama
+    #[arg(short, long)]
+    ollama_url: Option<String>,
 
-    /// SonarQube project key
+    /// Nome del progetto di SonarQube
     #[arg(short, long)]
     project_key: String,
 
-    /// SonarQube token
-    #[arg(long, default_value = "squ_77aafc8e5865e7c75ffcc340627cac9fbc115fb7")]
-    token: String,
+    /// Token di SonarQube
+    #[arg(long)]
+    token: Option<String>,
 
-    #[arg(long, default_value="gemma3:4b")]
-    model: String,
+    /// Nome del modello LLM
+    #[arg(long, short)]
+    model: Option<String>,
+
+    /// Regole da segnare direttamente come false positive
+    #[arg(long, short, num_args = 0..)]
+    rules: Vec<String>,
 }
 
 impl Args {
+    pub fn new() -> Result<Self> {
+        let mut args = Args::parse();
+        let mut config = Config::load()?;
+
+        config.update(
+            args.sonar_host.clone(),
+            args.ollama_url.clone(),
+            args.token.clone(),
+            args.model.clone(),
+        )?;
+
+        args.sonar_host = Some(config.sonar_host);
+        args.ollama_url = Some(config.ollama_url);
+        args.token = Some(config.token);
+        args.model = Some(config.model);
+
+        Ok(args)
+    }
+
     pub fn sonar_host(&self) -> String {
-        self.sonar_host.clone()
+        self.sonar_host.clone().unwrap()
     }
 
     pub fn ollama_url(&self) -> String {
-        self.ollama_url.clone()
+        self.ollama_url.clone().unwrap()
     }
 
     pub fn project_key(&self) -> String {
@@ -37,10 +63,14 @@ impl Args {
     }
 
     pub fn token(&self) -> String {
-        self.token.clone()
+        self.token.clone().unwrap()
     }
 
     pub fn model(&self) -> String {
-        self.model.clone()
+        self.model.clone().unwrap()
+    }
+
+    pub fn rules(&self) -> Vec<String> {
+        self.rules.clone()
     }
 }

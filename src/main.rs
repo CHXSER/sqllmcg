@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 
-use clap::Parser;
 use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -13,7 +12,7 @@ use models::sonarqube::{SonarIssue, parse_issues_from_json};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
+    let args = Args::new()?;
     let client = Client::new();
     let mut all_issues: Vec<SonarIssue> = Vec::new();
 
@@ -84,7 +83,7 @@ async fn main() -> Result<()> {
         // falsa a prescindere.
         // Aggiungere creazione tag per falso positivo.
         let prompt = format!(
-            "You are a cybersecurity expert analyzing a SonarQube issue.
+            "
             IMPORTANT: DO NOT USE MARKDOWN FORMATTING. Use SonarQube's specific formatting instead:
             - For bold text: use a single * character between the words (e.g., *Bold text*)
             - For code: use double backticks between the code (e.g., ``JavaClass.getCode()``)
@@ -98,6 +97,9 @@ async fn main() -> Result<()> {
                 the warning); 
                 - If not false positive, provide the fix;
                 - About the false positives, be conservative, don't say it's a false positive if you're not absolutely sure
+
+            The following rules are known to be false positives and should be marked as such:
+            {}
 
             CODE FIX:
             ``
@@ -118,6 +120,7 @@ async fn main() -> Result<()> {
             ``
             
             /nothink", 
+            args.rules().join("\n"),
             issue.path(),
             issue.line().unwrap_or(0),
             issue.message(),
@@ -136,6 +139,35 @@ async fn main() -> Result<()> {
         let ollama_result: OllamaResponse = ollama_response
             .json()
             .await?;
+
+        // Add tag for false positives
+        if ollama_result.response().to_lowercase().contains("*false positive*") {
+            let tag_url = format!("{}/api/issues/add_tags", args.sonar_host());
+            let mut tag_params = HashMap::new();
+            tag_params.insert("issue", issue.key());
+            tag_params.insert("tags", "false-positive".to_string());
+
+            let tag_response = client
+                .post(&tag_url)
+                .header("Authorization", format!("Bearer {}", args.token()))
+                .form(&tag_params)
+                .send()
+                .await
+                .context("Failed to add tag to SonarQube")?;
+
+            if !tag_response.status().is_success() {
+                let error_text = tag_response.text().await?;
+                //let status = tag_response.status();
+                println!(
+                    "Failed to add tag for issue {}: {}",
+                    issue.key(),
+                    //status.as_u16(),
+                    error_text
+                );
+            } else {
+                println!("Successfully added false-positive tag for issue: {}", issue.key());
+            }
+        }
 
         let comment_url = format!("{}/api/issues/add_comment", args.sonar_host());
         let mut params = HashMap::new();
