@@ -29,7 +29,8 @@
 
 1. Clona il repository:
 ```bash
-git clone 
+git clone https://github.com/CHXSER/sqllmcg
+cd sqllmcg
 ```
 
 2. Installa le dipendenze:
