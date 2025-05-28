@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
         ])
         .send()
         .await
-        .context("Can't fetch issues from SonarQube")?;
+        .context("Impossibile recuperare gli issue da SonarQube")?;
 
     let first_response: Value = response.json().await?;
     let total_issues = first_response["total"].as_u64().unwrap_or(0);
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
         all_issues.extend(issues);
     }
 
-    println!("Found {} issues", all_issues.len());
+    println!("Trovate {} issues", all_issues.len());
 
     for issue in all_issues {
         let code_context = match issue
@@ -79,9 +79,7 @@ async fn main() -> Result<()> {
                 "No code context available".to_string()
             }
         };
-        // Aggiungere un esclusione per regola, nel senso che se ti dico che una regola è falsa positiva, me la metti come 
-        // falsa a prescindere.
-        // Aggiungere creazione tag per falso positivo.
+
         let prompt = format!(
             "
             IMPORTANT: DO NOT USE MARKDOWN FORMATTING. Use SonarQube's specific formatting instead:
@@ -110,6 +108,7 @@ async fn main() -> Result<()> {
             explanations about your role, or general advice.
 
             Issue details:
+            Rule: {}
             File: {}
             Line: {}
             Message: {}
@@ -121,6 +120,7 @@ async fn main() -> Result<()> {
             
             /nothink", 
             args.rules().join("\n"),
+            issue.rule(),
             issue.path(),
             issue.line().unwrap_or(0),
             issue.message(),
@@ -134,66 +134,55 @@ async fn main() -> Result<()> {
             .json(&ollama_request)
             .send()
             .await
-            .context("Failed to send request to Ollama")?;
+            .context("Impossibile inviare la richiesta a Ollama")?;
 
         let ollama_result: OllamaResponse = ollama_response
             .json()
             .await?;
 
-        // Add tag for false positives
-        if ollama_result.response().to_lowercase().contains("*false positive*") {
-            let tag_url = format!("{}/api/issues/add_tags", args.sonar_host());
-            let mut tag_params = HashMap::new();
-            tag_params.insert("issue", issue.key());
-            tag_params.insert("tags", "false-positive".to_string());
+        // Aggiungere tag falso positivo
+        // if ollama_result.response().to_lowercase().contains("*false positive*") {
+        //     let tag_url = format!("{}/api/issues/add_tags", args.sonar_host());
+        //     let mut tag_params = HashMap::new();
+        //     tag_params.insert("issue", issue.key());
+        //     tag_params.insert("tags", "false-positive".to_string());
 
-            let tag_response = client
-                .post(&tag_url)
-                .header("Authorization", format!("Bearer {}", args.token()))
-                .form(&tag_params)
-                .send()
-                .await
-                .context("Failed to add tag to SonarQube")?;
+        //     let tag_response = client
+        //         .post(&tag_url)
+        //         .header("Authorization", format!("Bearer {}", args.token()))
+        //         .form(&tag_params)
+        //         .send()
+        //         .await
+        //         .context("Failed to add tag to SonarQube")?;
 
-            if !tag_response.status().is_success() {
-                let error_text = tag_response.text().await?;
-                //let status = tag_response.status();
-                println!(
-                    "Failed to add tag for issue {}: {}",
-                    issue.key(),
-                    //status.as_u16(),
-                    error_text
-                );
-            } else {
-                println!("Successfully added false-positive tag for issue: {}", issue.key());
-            }
-        }
+        //     if !tag_response.status().is_success() {
+        //         let error_text = tag_response.text().await?;
+        //         //let status = tag_response.status();
+        //         println!(
+        //             "Failed to add tag for issue {}: {}",
+        //             issue.key(),
+        //             //status.as_u16(),
+        //             error_text
+        //         );
+        //     } else {
+        //         println!("Successfully added false-positive tag for issue: {}", issue.key());
+        //     }
+        // }
 
         let comment_url = format!("{}/api/issues/add_comment", args.sonar_host());
         let mut params = HashMap::new();
         params.insert("issue", issue.key());
         params.insert("text", ollama_result.response());
 
-        let comment_response = client
+        let _ = client
             .post(&comment_url)
             .header("Authorization", format!("Bearer {}", args.token()))
             .form(&params)
             .send()
             .await
-            .context("Failed to add comment to SonarQube")?;
+            .context("Impossibile aggiungere il commento a SonarQube")?;
 
-        let status = comment_response.status();
-        if !status.is_success() {
-            let error_text = comment_response.text().await?;
-            println!(
-                "Failed to add comment for issue {}: Status {} - {}",
-                issue.key(),
-                status.as_u16(),
-                error_text
-            );
-        } else {
-            println!("Successfully added comment for issue: {}", issue.key());
-        }
+        println!("Commento aggiunto per l'issue: {}", issue.key());
     }
 
     Ok(())

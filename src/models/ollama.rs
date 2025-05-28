@@ -31,7 +31,7 @@ impl OllamaResponse {
             .replace("**", "*")
             .trim()
             .to_string();
-        println!("Processed response: {}", result);
+        // println!("Risposta ricevuta: {}", result);
         result
     }
 }

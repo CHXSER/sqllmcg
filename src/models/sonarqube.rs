@@ -6,6 +6,7 @@ use serde_json::Value;
 #[derive(Debug, Deserialize)]
 pub struct SonarIssue {
     key: String,
+    rule: String,
     message: String,
     path: String,
     line: Option<i32>,
@@ -14,6 +15,10 @@ pub struct SonarIssue {
 impl SonarIssue {
     pub fn key(&self) -> String {
         self.key.clone()
+    }
+
+    pub fn rule(&self) -> String {
+        self.rule.clone()
     }
 
     pub fn message(&self) -> String {
@@ -34,6 +39,7 @@ impl SonarIssue {
 
         Some(SonarIssue {
             key: value["key"].as_str()?.to_string(),
+            rule: value["rule"].as_str()?.to_string(),
             message: value["message"].as_str()?.to_string(),
             path,
             line: value["line"].as_i64().map(|l| l as i32),
@@ -47,8 +53,7 @@ impl SonarIssue {
         token: &str,
     ) -> Result<String> {
         let source_url = format!("{}/api/sources/raw", sonar_host);
-        println!("Path trovata: {}", self.path);
-        // Use the full component path directly
+        // println!("Path trovata: {}", self.path);
         let component_key = self.path.clone();
 
         let response = client
