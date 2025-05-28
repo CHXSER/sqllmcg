@@ -1,0 +1,6 @@
+{
+  "sonar_host": "http://localhost:9000",
+  "ollama_url": "http://padova.zucchettitest.it:11434",
+  "model": "deepseek-r1:14b",
+  "token": "squ_d2ab2a86e2aa0fa12c360e5899cc2656dc5f673d"
+}

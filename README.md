@@ -1,5 +1,8 @@
 # SonarQube LLM comment generator
 
+Questo tool è il risultato di un tirocinio della durata di 320 ore effettuato presso l'azienda Zucchetti S.p.A. L'obiettivo è quello 
+di integrare l'intelligenza artificiale con l'analisi statica, in particolare con SonarQube.
+
 ## Prerequisiti
 
 ### SonarQube
