@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
             ("projects", &args.project_key()),
             (
                 "impactSoftwareQualities",
-                &"SECURITY".to_string(),
+                &"SECURITY,RELIABILITY".to_string(),
             )
         ])
         .send()
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
                     ("projects", &args.project_key()),
                     (
                         "impactSoftwareQualities",
-                        &"SECURITY".to_string(),
+                        &"SECURITY,RELIABILITY".to_string(),
                     ),
                     ("p", &page.to_string())
                 ])
