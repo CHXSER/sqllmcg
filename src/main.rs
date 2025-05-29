@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
             ("projects", &args.project_key()),
             (
                 "impactSoftwareQualities",
-                &"SECURITY,RELIABILITY".to_string(),
+                &"SECURITY".to_string(),
             )
         ])
         .send()
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
                     ("projects", &args.project_key()),
                     (
                         "impactSoftwareQualities",
-                        &"SECURITY,RELIABILITY".to_string(),
+                        &"SECURITY".to_string(),
                     ),
                     ("p", &page.to_string())
                 ])
@@ -80,8 +80,11 @@ async fn main() -> Result<()> {
             }
         };
 
-        let prompt = format!(
-            "
+        let prompt;
+
+        if !args.rules().is_empty() {
+            prompt = format!("
+            You are a cybersecurity expert specialized in static analysis and SonarQube.
             IMPORTANT: DO NOT USE MARKDOWN FORMATTING. Use SonarQube's specific formatting instead:
             - For bold text: use a single * character between the words (e.g., *Bold text*)
             - For code: use double backticks between the code (e.g., ``JavaClass.getCode()``)
@@ -89,23 +92,21 @@ async fn main() -> Result<()> {
             - For code blocks, use also double backticks before and after the code block.
             
             Provide ONLY a direct analysis and fix in the following format:
+                - Add this to the first line of the response: *{}*;
                 - Brief description of the issue;
                 - Whether it's a false positive or not;
-                - If false positive say it in bold, explain why (In Java you can say to add an annotation to suppress 
+                - If false positive say it in bold, explain why (In Java you say to add an annotation to suppress 
                 the warning); 
                 - If not false positive, provide the fix;
                 - About the false positives, be conservative, don't say it's a false positive if you're not absolutely sure
-
-            The following rules are known to be false positives and should be marked as such:
-            {}
+                - Keep your response concise and focused only on the technical analysis and fix. Do not include any introductory text, 
+                explanations about your role, or general advice.
+                - Mark this rules exclusively as false positives, and say *false positive by user input*: ``{}``
 
             CODE FIX:
             ``
             // Your code fix here
             ``
-
-            Keep your response concise and focused only on the technical analysis and fix. Do not include any introductory text, 
-            explanations about your role, or general advice.
 
             Issue details:
             Rule: {}
@@ -117,15 +118,57 @@ async fn main() -> Result<()> {
             ``
             {}
             ``
-            
-            /nothink", 
-            args.rules().join("\n"),
+            /nothink",
+            args.model(),
+            args.rules().join(" "),
             issue.rule(),
             issue.path(),
             issue.line().unwrap_or(0),
             issue.message(),
-            &code_context
-        );
+            &code_context);
+        } else {
+            prompt = format!("
+            You are a cybersecurity expert specialized in static analysis and SonarQube.
+            IMPORTANT: DO NOT USE MARKDOWN FORMATTING. Use SonarQube's specific formatting instead:
+            - For bold text: use a single * character between the words (e.g., *Bold text*)
+            - For code: use double backticks between the code (e.g., ``JavaClass.getCode()``)
+            - Do not use any other formatting characters like #, -, >, etc.
+            - For code blocks, use also double backticks before and after the code block.
+            
+            Provide ONLY a direct analysis and fix in the following format:
+                - Add this to the first line of the response: *{}*;
+                - Brief description of the issue;
+                - Whether it's a false positive or not;
+                - If false positive say it in bold, explain why (In Java you say to add an annotation to suppress 
+                the warning); 
+                - If not false positive, provide the fix;
+                - About the false positives, be conservative, don't say it's a false positive if you're not absolutely sure
+                - Keep your response concise and focused only on the technical analysis and fix. Do not include any introductory text, 
+                explanations about your role, or general advice.
+
+            CODE FIX:
+            ``
+            // Your code fix here
+            ``
+
+            Issue details:
+            Rule: {}
+            File: {}
+            Line: {}
+            Message: {}
+
+            Code context:
+            ``
+            {}
+            ``
+            /nothink",
+            args.model(),
+            issue.rule(),
+            issue.path(),
+            issue.line().unwrap_or(0),
+            issue.message(),
+            &code_context);
+        }
 
         let ollama_request = OllamaRequest::new(args.model(), prompt, false);
 

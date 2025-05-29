@@ -32,7 +32,7 @@ di integrare l'intelligenza artificiale con l'analisi statica, in particolare co
 
 1. Clona il repository:
 ```bash
-git clone https://github.com/CHXSER/sqllmcg
+git clone https://github.com/CHXSER/sqllmcg.git
 cd sqllmcg
 ```
 
