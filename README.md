@@ -59,6 +59,12 @@ cargo run --release -- -p VulnerableApp
 - `-m` `--model`: (Opzionale) Nome del modello LLM da utilizzare, (default = "deepseek-r1:14b")
 - `-r` `--rules`: (Opzionale) Lista di regole da segnalare come falsi positivi
 
+### Nota
+Il tool salva in un file JSON i parametri immessi. Quindi dopo aver chiamato il programma con `-s https://server.it`
+la prossima volta non serve specificare l'url dato che `https://server.it` diventerà il default. Questo si applica 
+a tutti i parametri ad eccezione di `-p` e `-r`
+
+
 ## Esempio
 
 ```bash
