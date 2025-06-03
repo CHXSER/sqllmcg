@@ -7,26 +7,18 @@ di integrare l'intelligenza artificiale con l'analisi statica, in particolare co
 
 ### SonarQube
 - Server SonarQube in esecuzione 
-- Token di accesso valido
-  - [Guida alla generazione del token](https://docs.sonarqube.org/latest/user-guide/user-account/generating-and-using-tokens/)
-- Progetto configurato in SonarQube
-  - [Guida alla configurazione del progetto](https://docs.sonarqube.org/latest/setup/configure-project-analysis/)
-
+  - [Guida all'intallazione di SonarQube](https://docs.sonarsource.com/sonarqube-server/latest/setup-and-upgrade/overview/)
+- *User* Token di accesso valido
+- Progetto configurato con almeno una issue
 ### Ollama
 - Server Ollama in esecuzione
   - [Installazione di Ollama](https://ollama.ai/download)
-  - [Guida all'installazione con Docker](https://github.com/ollama/ollama/blob/main/docs/docker.md)
-- Modello LLM configurato (es. llama2, mistral, ecc.)
+- Modello LLM configurato (consigliato gemma3:12b)
   - [Lista dei modelli disponibili](https://ollama.ai/library)
-  - [Guida all'utilizzo dei modelli](https://github.com/ollama/ollama/blob/main/docs/import.md)
 
 ### Rust
 - Rust 1.70.0 o superiore
   - [Installazione di Rust](https://www.rust-lang.org/tools/install)
-  - [Guida all'aggiornamento di Rust](https://doc.rust-lang.org/book/ch01-01-installation.html#updating-rust)
-- Cargo (package manager di Rust)
-  - Installato automaticamente con Rust
-  - [Documentazione di Cargo](https://doc.rust-lang.org/cargo/)
 
 ## Installazione
 
@@ -38,22 +30,24 @@ cd sqllmcg
 
 2. Installa le dipendenze:
 ```bash
-cargo build
+cargo build --release
 ```
 
 ## Funzionamento
 
 Il tool analizza automaticamente i problemi di sicurezza e affidabilità rilevati da SonarQube utilizzando un modello LLM (Large Language Model) tramite Ollama. Per ogni problema:
 
-1. Recupera il contesto del codice
+1. Recupera il contesto del codice (5 righe prima e dopo della vulnerabilità)
 2. Analizza il problema utilizzando il modello LLM
-3. Aggiunge un commento dettagliato in SonarQube
-4. Marca i falsi positivi quando appropriato
+3. Aggiunge un commento dettagliato in SonarQube che contiene:
+  - Se la issue è un falso positivo
+  - Descrizione dettagliata della issue
+  - Una possibile soluzione alla issue
 
 ## Utilizzo
 
 ```bash
-cargo run -- --sonar-host [URL_SONARQUBE] --token [TOKEN] --project-key [PROJECT_KEY] --ollama-url [URL_OLLAMA] --model [MODEL_NAME]
+cargo run --release -- -p VulnerableApp
 ```
 
 ### Parametri
@@ -63,21 +57,10 @@ cargo run -- --sonar-host [URL_SONARQUBE] --token [TOKEN] --project-key [PROJECT
 - `-p` `--project-key`: (**Obbligatoria**) Chiave del progetto SonarQube
 - `-o` `--ollama-url`: (Opzionale) URL del server Ollama, (default = "http://localhost:11434")
 - `-m` `--model`: (Opzionale) Nome del modello LLM da utilizzare, (default = "deepseek-r1:14b")
-- `-r` `--rules`: (Opzionale) Lista di regole note come falsi positivi
+- `-r` `--rules`: (Opzionale) Lista di regole da segnalare come falsi positivi
 
 ## Esempio
 
 ```bash
-cargo r --release -- --sonar-host http://localhost:9000 --token abc123 --project-key my-project --ollama-url http://localhost:11434 --model llama2
+cargo r --release -- --sonar-host http://localhost:9000 --token abc123 --project-key my-project --ollama-url http://localhost:11434 --model deepseek-r1:14b
 ```
-
-## Funzionalità
-
-- Analisi automatica dei problemi di sicurezza e affidabilità
-- Identificazione dei falsi positivi
-- Aggiunta di commenti dettagliati in SonarQube
-- Tagging automatico dei falsi positivi
-- Supporto per regole personalizzate di falsi positivi
-
-
-
